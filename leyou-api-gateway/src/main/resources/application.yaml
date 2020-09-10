@@ -1,0 +1,92 @@
+server:
+  port: 10010
+  max-http-header-size: 20480
+spring:
+  application:
+    name: api-gateway
+
+# 注册中心
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}
+
+# 服务网关
+zuul:
+  prefix: /api                  # 添加路由前缀
+  retryable: true
+  routes:                       # 这里是映射路径
+    item-service: /item/**      # 商品微服务的映射路径
+    search-service: /search/**  # 搜索微服务
+    user-service: /user/**      # 用户微服务
+    auth-service: /auth/**      # 授权中心微服务
+    cart-service: /cart/**      # 购物车微服务
+    order-service: /order/**    # 订单微服务
+  add-host-header: true         # 网关转发时，携带头信息
+  sensitive-headers:            # 配置敏感头信息为null,否则set-cookie无效
+  ignored-services:
+    - upload-service            # 忽略upload-service服务(集合语法,可配置多个)，例如上传服务，如果上传文件也经Zuul网关，会造成不必要的网络负担，在高并发的情况下，有可能会造成整个系统的瘫痪，因此文件上传的请求是不经过网关来处理的。
+
+# 负载均衡
+ribbon:
+  ConnectTimeout: 50000            # 连接超时时间(ms)
+  ReadTimeout: 50000              # 通信超时时间(ms)
+  OkToRetryOnAllOperations: true # 是否对所有操作重试
+  MaxAutoRetriesNextServer: 1    # 同一服务不同实例的重试次数
+  MaxAutoRetries: 1              # 同一实例的重试次数
+
+# 断容器
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMillisecond: 100000 # 熔断超时时长：10000ms
+
+#Zuul编写拦截器，对用户的token进行校验，如果发现未登录，则进行拦截。
+#
+# 公钥需要自己生成，不会百度吧
+#
+leyou:
+  jwt:
+    pubKeyPath: D:\\DevelopUtils\\rsa\\rsa.pub  #公钥存放地址
+    cookieName: LY_TOKEN              # cookie名称
+  filter:
+    allowPaths:
+      - /api/auth
+      - /api/search
+      - /api/user/register
+      - /api/user/code
+      - /api/item
+
+# actuator监控应用
+management:
+  # 默认Actuator只暴露了health和info端点，在SpringBoot的application.yml配置文件中加入这句话暴露所有端点
+  endpoints:
+    exposure:
+      include: "*"
+  info:
+    build:
+      enabled: true
+  # 代表启用单独的url地址来监控Spring Boot应用，为了安全一般都启用独立的端口来访问后端的监控信息
+  server:
+    servlet:
+      context-path: /monitor
+  endpoint:
+    health:
+      show-details: always
+    shutdown:
+      enabled: false
+
+# actuator/info
+info:
+  app:
+    name: API网关
+  company:
+    name: www.leyou.com

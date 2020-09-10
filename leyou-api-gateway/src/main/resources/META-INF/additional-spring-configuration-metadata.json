@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "management.enabled",
+      "type": "java.lang.String",
+      "description": "Description for management.enabled."
+    },
+    {
+      "name": "ribbon.ConnectTimeout",
+      "type": "java.lang.String",
+      "description": "Description for ribbon.ConnectTimeout."
+    }
+  ] }
